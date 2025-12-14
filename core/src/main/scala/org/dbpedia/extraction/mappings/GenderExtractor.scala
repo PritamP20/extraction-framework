@@ -27,12 +27,10 @@ extends MappingExtractor(context)
 
   private val pronounMap: Map[String, String] = GenderExtractorConfig.pronounsMap(language)
 
-  // FIXME: don't use string constant, use context.ontology (or at least RdfNamespace.FOAF)
-  private val genderProperty = "http://xmlns.com/foaf/0.1/gender"
-  // FIXME: don't use string constant, use context.ontology (or at least RdfNamespace.RDF)
-  private val typeProperty = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
-  // FIXME: don't use string constant, use context.ontology (or at least DBpediaNamespace.ONTOLOGY)
-  private val personUri = "http://dbpedia.org/ontology/Person"
+  // Use ontology lookups instead of hardcoded string constants
+  private val genderProperty = context.ontology.properties("foaf:gender")
+  private val typeProperty = context.ontology.properties("rdf:type")
+  private val personClass = context.ontology.classes("Person")
 
   override val datasets = Set(DBpediaDatasets.Genders)
 
@@ -46,7 +44,7 @@ extends MappingExtractor(context)
     val mappingGraph = super.extract(node, subjectUri)
 
     // if this page is mapped onto Person
-    if (mappingGraph.exists(q => q.predicate == typeProperty && q.value == personUri))
+    if (mappingGraph.exists(q => q.predicate == typeProperty.uri && q.value == personClass.uri))
     {
       // get the page text
       val wikiText: String = node.toWikiText
@@ -78,7 +76,7 @@ extends MappingExtractor(context)
       // output triple for maximum gender
       if (maxGender != "" && maxCount > GenderExtractorConfig.minCount && maxCount/secondCount > GenderExtractorConfig.minDifference)
       {
-        return Seq(new Quad(context.language, DBpediaDatasets.Genders, subjectUri, genderProperty, maxGender, node.sourceIri, new Datatype("rdf:langString")))
+        return Seq(new Quad(context.language, DBpediaDatasets.Genders, subjectUri, genderProperty.uri, maxGender, node.sourceIri, new Datatype("rdf:langString")))
       }
     }
 
